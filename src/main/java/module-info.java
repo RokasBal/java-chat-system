@@ -13,4 +13,9 @@ module com.chat.javachatsystem {
 
     opens com.chat.javachatsystem to javafx.fxml;
     exports com.chat.javachatsystem;
+
+    opens Client to javafx.fxml;
+    exports Client;
+
+    opens Resources;
 }
