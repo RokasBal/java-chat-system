@@ -79,6 +79,11 @@ public class ClientController implements Initializable {
             ip = LoginController.getIP();
             port = LoginController.getPort();
             username = LoginController.getUsername();
+            stage = (Stage) messageBox.getScene().getWindow();
+            stage.setOnCloseRequest(event -> {
+                client.close();
+                Platform.exit();
+            });
             start();
         });
     }
@@ -86,10 +91,6 @@ public class ClientController implements Initializable {
     private void start() {
         client = new Client(ip, port, chatTable);
         client.start();
-        stage = (Stage) messageBox.getScene().getWindow();
-        stage.setOnCloseRequest(event -> {
-            client.close();
-        });
     }
 
     private void sendMessage(ActionEvent actionEvent) {

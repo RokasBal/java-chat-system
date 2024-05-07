@@ -25,6 +25,7 @@ public class Client extends Thread {
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         } catch (IOException e) {
             System.out.println("Error in the client: " + e.getMessage());
+            close();
         }
     }
 
@@ -39,9 +40,9 @@ public class Client extends Thread {
         System.out.println("testas");
         try {
             String serverResponse;
-            while ((serverResponse = in.readLine()) != null) {
+            while (!Thread.currentThread().isInterrupted() && (serverResponse = in.readLine()) != null) {
                 System.out.println("Received message from server: " + serverResponse);
-                final Message finalMessage; // Declare final reference
+                final Message finalMessage;
                 String[] parts = serverResponse.split(":", 2);
                 String user = parts[0];
                 String message = parts[1];
@@ -51,16 +52,28 @@ public class Client extends Thread {
                 });
             }
         } catch (IOException e) {
-            System.out.println("Error in client thread: " + e.getMessage());
+            System.err.println("Error in client thread: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             close();
         }
     }
     public void close() {
+        System.out.println("test message in Client.close().");
         try {
-            if (in != null) in.close();
-            if (out != null) out.close();
-            if (socket != null) socket.close();
+            if (socket != null) {
+                socket.close(); // Close the socket first
+                System.out.println("socket closed.");
+            }
+            if (in != null) {
+                in.close(); // Close the BufferedReader
+                System.out.println("in closed.");
+            }
+            if (out != null) {
+                out.close(); // Close the PrintWriter
+                System.out.println("out closed.");
+            }
+            Thread.currentThread().interrupt(); // Interrupt the thread
             System.out.println("Client closed.");
         } catch (IOException e) {
             System.out.println("Error while closing the client: " + e.getMessage());

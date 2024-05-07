@@ -46,6 +46,15 @@ public class ClientHandler extends Thread {
             clientSocket.close();
         } catch (IOException e) {
             System.out.println("Error handling client: " + e.getMessage());
+        } finally {
+            try {
+                if (clientSocket != null && !clientSocket.isClosed()) {
+                    clientSocket.close();
+                }
+            } catch (IOException e) {
+                System.out.println("Error closing client socket: " + e.getMessage());
+            }
+            server.removeClient(this);
         }
     }
 }
