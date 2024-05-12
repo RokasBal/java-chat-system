@@ -11,6 +11,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Client extends Thread {
     private Socket socket;
@@ -24,11 +25,14 @@ public class Client extends Thread {
 
     private TableView<String> userTable;
 
-    public Client(String ip, int port, String username, TableView<Message> chatTable, TableView<String> userTable) {
+    private ClientController controller;
+
+    public Client(String ip, int port, String username, TableView<Message> chatTable, TableView<String> userTable, ClientController controller) {
         try {
             this.chatTable = chatTable;
             this.username = username;
             this.userTable = userTable;
+            this.controller = controller;
             socket = new Socket(ip, port);
             System.out.println("Connected to server: " + ip + ":" + port);
             out = new PrintWriter(socket.getOutputStream(), true);
@@ -60,12 +64,16 @@ public class Client extends Thread {
                     System.out.println("Received list of usernames: " + usernameList);
                 } else {
                     final Message finalMessage;
-                    String[] parts = serverResponse.split(":", 2);
-                    String user = parts[0];
-                    String message = parts[1];
-                    finalMessage = new Message(user, message);
+                    String[] parts = serverResponse.split(":", 3);
+                    String room = parts[0];
+                    String user = parts[1];
+                    String message = parts[2];
+                    finalMessage = new Message(room, user, message);
                     Platform.runLater(() -> {
-                        chatTable.getItems().add(finalMessage);
+//                        if (Objects.equals(controller.getSelectedRoom(), room)) {
+//                            chatTable.getItems().add(finalMessage);
+//                        }
+                        controller.addMessage(finalMessage);
                     });
                 }
             }
