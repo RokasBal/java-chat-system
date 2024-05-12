@@ -2,6 +2,7 @@ package Client;
 
 import Resources.Message;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -32,6 +33,8 @@ public class ClientController implements Initializable {
     private TextArea messageBox;
     @FXML
     private TableView<String> roomTable;
+    @FXML
+    private TableView<String> userTable;
     @FXML
     private TableView<Message> chatTable;
     @FXML
@@ -71,6 +74,10 @@ public class ClientController implements Initializable {
 
         chatTable.getColumns().addAll(userColumn, messageColumn);
 
+        TableColumn<String, String> usernameColumn = new TableColumn<>("Username");
+        usernameColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue()));
+        userTable.getColumns().add(usernameColumn);
+
         sendButton.setOnAction(this::sendMessage);
 
         messageBox.setWrapText(true);
@@ -89,7 +96,7 @@ public class ClientController implements Initializable {
     }
 
     private void start() {
-        client = new Client(ip, port, username, chatTable);
+        client = new Client(ip, port, username, chatTable, userTable);
         client.start();
     }
 

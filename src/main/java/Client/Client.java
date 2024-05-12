@@ -22,10 +22,13 @@ public class Client extends Thread {
 
     private List<String> usernameList = new ArrayList<>();
 
-    public Client(String ip, int port, String username, TableView<Message> chatTable) {
+    private TableView<String> userTable;
+
+    public Client(String ip, int port, String username, TableView<Message> chatTable, TableView<String> userTable) {
         try {
             this.chatTable = chatTable;
             this.username = username;
+            this.userTable = userTable;
             socket = new Socket(ip, port);
             System.out.println("Connected to server: " + ip + ":" + port);
             out = new PrintWriter(socket.getOutputStream(), true);
@@ -53,6 +56,7 @@ public class Client extends Thread {
 
                 if (serverResponse.startsWith("/userlist ")) {
                     usernameList = List.of(serverResponse.substring(10).split(","));
+                    updateUserTable();
                     System.out.println("Received list of usernames: " + usernameList);
                 } else {
                     final Message finalMessage;
@@ -92,5 +96,12 @@ public class Client extends Thread {
         } catch (IOException e) {
             System.out.println("Error while closing the client: " + e.getMessage());
         }
+    }
+
+    public void updateUserTable() {
+        Platform.runLater(() -> {
+            userTable.getItems().clear(); // Clear existing items
+            userTable.getItems().addAll(usernameList); // Add new usernames
+        });
     }
 }
