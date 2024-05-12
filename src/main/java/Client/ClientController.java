@@ -89,7 +89,7 @@ public class ClientController implements Initializable {
     }
 
     private void start() {
-        client = new Client(ip, port, chatTable);
+        client = new Client(ip, port, username, chatTable);
         client.start();
     }
 

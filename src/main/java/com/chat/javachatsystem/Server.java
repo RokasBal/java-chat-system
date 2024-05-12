@@ -12,6 +12,7 @@ import java.util.List;
 public class Server {
     private ServerSocket serverSocket;
     private List<ClientHandler> clients = new ArrayList<>();
+    private List<String> usernames = new ArrayList<>();
 
     protected void startServer(String ip, int port) {
         try {
@@ -24,6 +25,7 @@ public class Server {
                 ClientHandler clientHandler = new ClientHandler(clientSocket, this);
                 clients.add(clientHandler);
                 clientHandler.start();
+//                sendUserListToAllClients();
             }
         } catch (IOException e) {
             System.out.println("Error in the server: " + e.getMessage());
@@ -52,5 +54,23 @@ public class Server {
 
     public synchronized void removeClient(ClientHandler client) {
         clients.remove(client);
+    }
+
+    // Method to add a new username
+    public synchronized void addUsername(String username) {
+        usernames.add(username);
+        sendUserListToAllClients(); // Send updated user list to all clients
+    }
+
+    // Method to remove a username
+    public synchronized void removeUsername(String username) {
+        usernames.remove(username);
+        sendUserListToAllClients(); // Send updated user list to all clients
+    }
+
+    // Method to send the list of usernames to all clients
+    public synchronized void sendUserListToAllClients() {
+        String userListMessage = "/userlist " + String.join(",", usernames);
+        broadcastMessage(userListMessage, null);
     }
 }

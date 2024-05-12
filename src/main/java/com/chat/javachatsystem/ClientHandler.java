@@ -36,6 +36,12 @@ public class ClientHandler extends Thread {
     public void run() {
         try {
             String inputLine;
+            String username = in.readLine();
+            System.out.println("User '" + username + "' connected.");
+
+            // Add the username to the server's list
+            server.addUsername(username);
+
             while ((inputLine = in.readLine()) != null) {
                 System.out.println("Received from client: " + inputLine);
                 server.broadcastMessage(inputLine, this);
@@ -43,6 +49,7 @@ public class ClientHandler extends Thread {
 
             System.out.println("Client disconnected: " + clientSocket);
             server.removeClient(this);
+            server.removeUsername(username);
             clientSocket.close();
         } catch (IOException e) {
             System.out.println("Error handling client: " + e.getMessage());

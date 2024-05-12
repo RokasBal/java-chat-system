@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Client extends Thread {
     private Socket socket;
@@ -16,13 +18,19 @@ public class Client extends Thread {
     private BufferedReader in;
     private TableView<Message> chatTable;
 
-    public Client(String ip, int port, TableView<Message> chatTable) {
+    private String username;
+
+    private List<String> usernameList = new ArrayList<>();
+
+    public Client(String ip, int port, String username, TableView<Message> chatTable) {
         try {
             this.chatTable = chatTable;
+            this.username = username;
             socket = new Socket(ip, port);
             System.out.println("Connected to server: " + ip + ":" + port);
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            out.println(username);
         } catch (IOException e) {
             System.out.println("Error in the client: " + e.getMessage());
             close();
@@ -42,14 +50,20 @@ public class Client extends Thread {
             String serverResponse;
             while (!Thread.currentThread().isInterrupted() && (serverResponse = in.readLine()) != null) {
                 System.out.println("Received message from server: " + serverResponse);
-                final Message finalMessage;
-                String[] parts = serverResponse.split(":", 2);
-                String user = parts[0];
-                String message = parts[1];
-                finalMessage = new Message(user, message);
-                Platform.runLater(() -> {
-                    chatTable.getItems().add(finalMessage);
-                });
+
+                if (serverResponse.startsWith("/userlist ")) {
+                    usernameList = List.of(serverResponse.substring(10).split(","));
+                    System.out.println("Received list of usernames: " + usernameList);
+                } else {
+                    final Message finalMessage;
+                    String[] parts = serverResponse.split(":", 2);
+                    String user = parts[0];
+                    String message = parts[1];
+                    finalMessage = new Message(user, message);
+                    Platform.runLater(() -> {
+                        chatTable.getItems().add(finalMessage);
+                    });
+                }
             }
         } catch (IOException e) {
             System.err.println("Error in client thread: " + e.getMessage());
