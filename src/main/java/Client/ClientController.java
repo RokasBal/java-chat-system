@@ -4,7 +4,6 @@ import Resources.Message;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -15,14 +14,14 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
 import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ResourceBundle;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ClientController implements Initializable {
     private Socket socket;
@@ -45,12 +44,17 @@ public class ClientController implements Initializable {
     private TableView<Message> chatTable;
     @FXML
     private Button sendButton;
+    @FXML
+    private Button makeRoomButton;
 
     private Client client;
 
     private String selectedRoom = null;
 
     private Map<String, ObservableList<Message>> roomMessages = new HashMap<>();
+
+    AtomicReference<String> previousRoomSelection = new AtomicReference<>(null);
+    AtomicReference<String> previousUserSelection = new AtomicReference<>(null);
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -88,14 +92,71 @@ public class ClientController implements Initializable {
         usernameColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue()));
         userTable.getColumns().add(usernameColumn);
 
-        userTable.getSelectionModel().selectedIndexProperty().addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                // Update the selectedUser when the selection changes
-                selectedRoom = userTable.getSelectionModel().getSelectedItem();
+//        userTable.getSelectionModel().selectedIndexProperty().addListener(new ChangeListener<Number>() {
+//            @Override
+//            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+//                // Update the selectedUser when the selection changes
+//                roomTable.getSelectionModel().clearSelection();
+//                selectedRoom = userTable.getSelectionModel().getSelectedItem();
+//                updateChatTable();
+//                switchRoom(selectedRoom);
+//                initializeRoom(selectedRoom);
+//                System.out.println("Selected user: " + selectedRoom);
+//            }
+//        });
+
+        TableColumn<String, String> roomNameColumn = new TableColumn<>("Room name");
+        roomNameColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue()));
+        roomTable.getColumns().add(roomNameColumn);
+
+//        roomTable.getSelectionModel().selectedIndexProperty().addListener(selectionListener);
+//        userTable.getSelectionModel().selectedIndexProperty().addListener(selectionListener);
+
+
+//        roomTable.getSelectionModel().selectedIndexProperty().addListener(new ChangeListener<Number>() {
+//            @Override
+//            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+//                // Update the selectedUser when the selection changes
+//                userTable.getSelectionModel().clearSelection();
+//                selectedRoom = roomTable.getSelectionModel().getSelectedItem();
+//                updateChatTable();
+//                switchRoom(selectedRoom);
+//                initializeRoom(selectedRoom);
+//                System.out.println("Selected room: " + selectedRoom);
+//            }
+//        });
+
+        roomTable.getItems().add("Room 1");
+
+        roomTable.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null) {
+                if (newValue.equals(previousRoomSelection.get())) {
+                    // If the newly selected item is the same as the previously selected one, return
+                    return;
+                }
+                previousRoomSelection.set(newValue);
+                userTable.getSelectionModel().clearSelection();
+                selectedRoom = newValue;
                 updateChatTable();
-                switchRoom(selectedRoom);
-                System.out.println("Selected user: " + selectedRoom);
+                switchRoom(newValue);
+                initializeRoom(newValue);
+                System.out.println("Selected room: " + newValue);
+            }
+        });
+
+        userTable.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null) {
+                if (newValue.equals(previousUserSelection.get())) {
+                    // If the newly selected item is the same as the previously selected one, return
+                    return;
+                }
+                previousUserSelection.set(newValue);
+                roomTable.getSelectionModel().clearSelection();
+                selectedRoom = newValue; // Assuming selectedUser represents the room name
+                updateChatTable();
+                switchRoom(newValue);
+                initializeRoom(newValue);
+                System.out.println("Selected user: " + newValue);
             }
         });
 
@@ -106,6 +167,8 @@ public class ClientController implements Initializable {
         selectedRoom = "Room 1"; // Set initial room name
         roomMessages.put(selectedRoom, FXCollections.observableArrayList()); // Create an empty list for messages
         switchRoom(selectedRoom); // Display messages for the initial room
+
+        makeRoomButton.setOnAction(this::makeNewRoom);
 
         Platform.runLater(() -> {
             ip = LoginController.getIP();
@@ -145,13 +208,6 @@ public class ClientController implements Initializable {
         }
         messages.add(sentMessage);
 
-        // Update UI
-//        switchRoom(selectedRoom);
-
-//        Platform.runLater(() -> {
-//            chatTable.getItems().add(sentMessage);
-//        });
-
         chatTable.getItems().add(sentMessage);
 
         client.sendMessage(selectedRoom + ":" + sentMessage.getUser() + ":" + sentMessage.getMessage());
@@ -168,15 +224,19 @@ public class ClientController implements Initializable {
         // Clear chatTable
         chatTable.getItems().clear();
 
+        selectedRoom = roomName;
+
+        if (roomName == null) return;
+
         // Get messages for the selected room
         ObservableList<Message> messages = roomMessages.get(roomName);
 
         // If messages for the selected room exist, set them as the items for chatTable
         if (messages != null) {
-            chatTable.setItems(messages);
-        } else {
-            // If no messages exist for the selected room, set an empty list as the items for chatTable
-            chatTable.setItems(FXCollections.observableArrayList());
+            // Set the items for chatTable on the JavaFX application thread
+            Platform.runLater(() -> {
+                chatTable.getItems().addAll(messages);
+            });
         }
     }
 
@@ -185,8 +245,20 @@ public class ClientController implements Initializable {
     }
 
     public void addMessage(Message message) {
-        String roomName = message.getRoom();
-        ObservableList<Message> messages = roomMessages.get(roomName);
+        String roomName;
+        ObservableList<Message> messages;
+
+        if (!message.getRoom().startsWith("Room ")) {
+            if (Objects.equals(message.getRoom(), username)) {
+                roomName = message.getUser();
+            } else return;
+        } else {
+            roomName = message.getRoom();
+        }
+
+
+//        roomName = message.getRoom();
+        messages = roomMessages.get(roomName);
         if (messages == null) {
             messages = FXCollections.observableArrayList();
             roomMessages.put(roomName, messages);
@@ -195,9 +267,37 @@ public class ClientController implements Initializable {
 
         // If the room is the current room, update UI
         if (roomName.equals(selectedRoom)) {
+            ObservableList<Message> finalMessages = messages;
             Platform.runLater(() -> {
-                chatTable.getItems().add(message);
+                // Clear chatTable only when adding the first message to the current room
+                if (chatTable.getItems().isEmpty()) {
+                    chatTable.getItems().addAll(finalMessages);
+                } else {
+                    chatTable.getItems().add(message);
+                }
             });
+        }
+    }
+
+    public void makeNewRoom(ActionEvent actionEvent) {
+        String lastRoomName = roomTable.getItems().getLast();
+        String[] parts = lastRoomName.split(" ", 2);
+        int lastNumber = Integer.parseInt(parts[1]);
+        roomTable.getItems().add("Room " + (lastNumber + 1));
+        client.sendMessage("/newRoom Room " + (lastNumber + 1));
+    }
+
+    public void receiveRoom() {
+
+    }
+
+    public TableView getRoomTable() {
+        return roomTable;
+    }
+
+    private void initializeRoom(String roomName) {
+        if (!roomMessages.containsKey(roomName)) {
+            roomMessages.put(roomName, FXCollections.observableArrayList());
         }
     }
 }

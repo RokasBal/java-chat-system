@@ -22,6 +22,7 @@ public class Client extends Thread {
     private String username;
 
     private List<String> usernameList = new ArrayList<>();
+    private List<String> roomList = new ArrayList<>();
 
     private TableView<String> userTable;
 
@@ -62,6 +63,11 @@ public class Client extends Thread {
                     usernameList = List.of(serverResponse.substring(10).split(","));
                     updateUserTable();
                     System.out.println("Received list of usernames: " + usernameList);
+                } else if (serverResponse.startsWith("/newRoom ")) {
+//                    String roomName = serverResponse.substring(9);
+                    roomList = List.of(serverResponse.substring(9).split(","));
+                    updateRoomTable();
+                    System.out.println("Received new room: " + roomList);
                 } else {
                     final Message finalMessage;
                     String[] parts = serverResponse.split(":", 3);
@@ -110,6 +116,13 @@ public class Client extends Thread {
         Platform.runLater(() -> {
             userTable.getItems().clear(); // Clear existing items
             userTable.getItems().addAll(usernameList); // Add new usernames
+        });
+    }
+
+    public void updateRoomTable() {
+        Platform.runLater(() -> {
+            controller.getRoomTable().getItems().clear();
+            controller.getRoomTable().getItems().addAll(roomList); // Add new usernames
         });
     }
 }

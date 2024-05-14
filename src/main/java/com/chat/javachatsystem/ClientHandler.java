@@ -41,9 +41,15 @@ public class ClientHandler extends Thread {
 
             // Add the username to the server's list
             server.addUsername(username);
+            server.sendRooms(this);
 
             while ((inputLine = in.readLine()) != null) {
                 System.out.println("Received from client: " + inputLine);
+                if (inputLine.startsWith("/newRoom ")) {
+                    String roomName = inputLine.substring(9);
+                    server.sendNewRoomName(roomName, this);
+                    continue;
+                }
                 server.broadcastMessage(inputLine, this);
             }
 
