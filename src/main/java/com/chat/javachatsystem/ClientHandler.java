@@ -6,11 +6,22 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+/**
+ * Class, responsible for handling an individual client server-side.
+ */
+
 public class ClientHandler extends Thread {
-    private Socket clientSocket;
-    private PrintWriter out;
-    private BufferedReader in;
-    private Server server;
+    private Socket clientSocket; /** Socket, used for communication with the client */
+    private PrintWriter out;     /** Writer, used for writing to the client */
+    private BufferedReader in;   /** Reader, used for reading from the client */
+    private Server server;       /** Server, to which the client is connected */
+
+    /**
+     * Constructor, initializing the client handler.
+     *
+     * @param socket The socket, used for communication with the client.
+     * @param server The server, to which the client is connected.
+     */
 
     public ClientHandler(Socket socket, Server server) {
         this.clientSocket = socket;
@@ -23,6 +34,12 @@ public class ClientHandler extends Thread {
         }
     }
 
+    /**
+     * Method, used for sending a message to the client.
+     *
+     * @param message Message, to be sent to the client.
+     */
+
     public void sendMessage(String message) {
         try {
             out.println(message);
@@ -33,13 +50,16 @@ public class ClientHandler extends Thread {
         }
     }
 
+    /**
+     * Method, used for running the client handler thread.
+     */
+
     public void run() {
         try {
             String inputLine;
             String username = in.readLine();
             System.out.println("User '" + username + "' connected.");
 
-            // Add the username to the server's list
             server.addUsername(username);
             server.sendRooms(this);
 

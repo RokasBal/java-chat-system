@@ -14,24 +14,41 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+/**
+ * Class, responsible for handling the login window.
+ */
+
 public class LoginController implements Initializable {
     @FXML
-    private Button loginButton;
+    private Button loginButton;       /** Button, used for logging in */
     @FXML
-    private TextField ipField;
+    private TextField ipField;        /** Field, used for entering the IP address */
     @FXML
-    private TextField portField;
+    private TextField portField;      /** Field, used for entering the port */
     @FXML
-    private TextField usernameField;
+    private TextField usernameField;  /** Field, used for entering the username */
 
-    private static String ip;
-    private static String username;
-    private static int port;
+    private static String ip;         /** IP address of the server */
+    private static int port;          /** Port of the server */
+    private static String username;   /** Username of the client */
+
+    /**
+     * Method, initializing the login window.
+     *
+     * @param url The URL of the login window.
+     * @param resourceBundle The resource bundle of the login window.
+     */
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         loginButton.setOnAction(this::login);
     }
+
+    /**
+     * Method, used for getting the user data, needed to open a client thread.
+     *
+     * @param actionEvent The event of clicking the login button.
+     */
 
     private void login(ActionEvent actionEvent) {
         ip = ipField.getText();
@@ -39,6 +56,10 @@ public class LoginController implements Initializable {
         username = usernameField.getText();
         openClient();
     }
+
+    /**
+     * Method, used for opening the client window.
+     */
 
     private void openClient() {
         try {

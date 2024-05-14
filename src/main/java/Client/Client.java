@@ -13,20 +13,34 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Class, responsible for handling the client-side communication.
+ */
+
 public class Client extends Thread {
-    private Socket socket;
-    private PrintWriter out;
-    private BufferedReader in;
-    private TableView<Message> chatTable;
+    private Socket socket;                                 /** Socket, used for communication with the server */
+    private PrintWriter out;                               /** Writer, used for writing to the server */
+    private BufferedReader in;                             /** Reader, used for reading from the server */
+    private TableView<Message> chatTable;                  /** Table, used for displaying the chat messages */
+    private String username;                               /** Username of the client */
 
-    private String username;
+    private List<String> usernameList = new ArrayList<>(); /** List of all users' usernames */
+    private List<String> roomList = new ArrayList<>();     /** List of all created rooms */
 
-    private List<String> usernameList = new ArrayList<>();
-    private List<String> roomList = new ArrayList<>();
+    private TableView<String> userTable;                   /** Table, used for displaying the list of online users */
 
-    private TableView<String> userTable;
+    private ClientController controller;                   /** Controller, responsible for handling the client-side window */
 
-    private ClientController controller;
+    /**
+     * Constructor, initializing the client thread.
+     *
+     * @param ip The IP address of the server.
+     * @param port The port of the server.
+     * @param username The username of the client.
+     * @param chatTable The table, used for displaying the chat messages.
+     * @param userTable The table, used for displaying the list of online users.
+     * @param controller The controller, responsible for handling the client-side window.
+     */
 
     public Client(String ip, int port, String username, TableView<Message> chatTable, TableView<String> userTable, ClientController controller) {
         try {
@@ -45,29 +59,39 @@ public class Client extends Thread {
         }
     }
 
+    /**
+     * Method, used for sending a message to the server.
+     *
+     * @param message Message to be sent to the server.
+     */
+
     public void sendMessage(String message) {
         System.out.println("Sending message to server: " + message);
         out.println(message);
-        out.flush(); // Ensure that the output stream is flushed
+        out.flush();
     }
+
+    /**
+     * Method, used for running the client thread.
+     */
 
     @Override
     public void run() {
-        System.out.println("testas");
         try {
             String serverResponse;
             while (!Thread.currentThread().isInterrupted() && (serverResponse = in.readLine()) != null) {
                 System.out.println("Received message from server: " + serverResponse);
 
-                if (serverResponse.startsWith("/userlist ")) {
+                /** Filter out messages based on what's being sent */
+                if (serverResponse.startsWith("/userlist ")) { // If the server sends a list of usernames
                     usernameList = List.of(serverResponse.substring(10).split(","));
                     updateUserTable();
                     System.out.println("Received list of usernames: " + usernameList);
-                } else if (serverResponse.startsWith("/newRoom ")) {
+                } else if (serverResponse.startsWith("/newRoom ")) { // If the server sends a new room
                     roomList = List.of(serverResponse.substring(9).split(","));
                     updateRoomTable();
                     System.out.println("Received new room: " + roomList);
-                } else {
+                } else { // Else if the server sends a message
                     final Message finalMessage;
                     String[] parts = serverResponse.split(":", 3);
                     String room = parts[0];
@@ -86,39 +110,51 @@ public class Client extends Thread {
             close();
         }
     }
+
+    /**
+     * Method, used for closing the client.
+     */
+
     public void close() {
-        System.out.println("test message in Client.close().");
         try {
             if (socket != null) {
-                socket.close(); // Close the socket first
+                socket.close();
                 System.out.println("socket closed.");
             }
             if (in != null) {
-                in.close(); // Close the BufferedReader
+                in.close();
                 System.out.println("in closed.");
             }
             if (out != null) {
-                out.close(); // Close the PrintWriter
+                out.close();
                 System.out.println("out closed.");
             }
-            Thread.currentThread().interrupt(); // Interrupt the thread
+            Thread.currentThread().interrupt();
             System.out.println("Client closed.");
         } catch (IOException e) {
             System.out.println("Error while closing the client: " + e.getMessage());
         }
     }
 
+    /**
+     * Method, used for updating the list of online users.
+     */
+
     public void updateUserTable() {
         Platform.runLater(() -> {
-            userTable.getItems().clear(); // Clear existing items
-            userTable.getItems().addAll(usernameList); // Add new usernames
+            userTable.getItems().clear();
+            userTable.getItems().addAll(usernameList);
         });
     }
+
+    /**
+     * Method, used for updating the list of rooms.
+     */
 
     public void updateRoomTable() {
         Platform.runLater(() -> {
             controller.getRoomTable().getItems().clear();
-            controller.getRoomTable().getItems().addAll(roomList); // Add new usernames
+            controller.getRoomTable().getItems().addAll(roomList);
         });
     }
 }
