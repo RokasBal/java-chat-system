@@ -55,6 +55,7 @@ public class Server {
         try {
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
+                writer.close();
                 System.out.println("Server stopped.");
                 writer.write("Server stopped");
             }
@@ -64,11 +65,11 @@ public class Server {
     }
 
     public synchronized void broadcastMessage(String message, ClientHandler sender) throws IOException {
+        writer.write("Broadcasting message: " + message);
+        writer.newLine();
         for (ClientHandler client : clients) {
             if (client != sender) {
                 System.out.println("broadcasting: " + message);
-                writer.write(message);
-                writer.newLine();
                 client.sendMessage(message);
             }
         }
@@ -89,6 +90,8 @@ public class Server {
     // Method to remove a username
     public synchronized void removeUsername(String username) throws IOException {
         usernames.remove(username);
+        writer.write("User " + username + " has disconnected.");
+        writer.newLine();
         sendUserListToAllClients(); // Send updated user list to all clients
     }
 

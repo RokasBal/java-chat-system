@@ -64,7 +64,6 @@ public class Client extends Thread {
                     updateUserTable();
                     System.out.println("Received list of usernames: " + usernameList);
                 } else if (serverResponse.startsWith("/newRoom ")) {
-//                    String roomName = serverResponse.substring(9);
                     roomList = List.of(serverResponse.substring(9).split(","));
                     updateRoomTable();
                     System.out.println("Received new room: " + roomList);
@@ -76,9 +75,6 @@ public class Client extends Thread {
                     String message = parts[2];
                     finalMessage = new Message(room, user, message);
                     Platform.runLater(() -> {
-//                        if (Objects.equals(controller.getSelectedRoom(), room)) {
-//                            chatTable.getItems().add(finalMessage);
-//                        }
                         controller.addMessage(finalMessage);
                     });
                 }
